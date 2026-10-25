@@ -9,7 +9,7 @@
       "Hull Points (HP)": 4,
       "Heat Limit (HL)": 12,
       "Platforms (PF)": 3,
-      "Cost": 50000
+      "Cost": 0
     },
     {
       "Category": "Mech",
@@ -20,7 +20,7 @@
       "Hull Points (HP)": 6,
       "Heat Limit (HL)": 10,
       "Platforms (PF)": 4,
-      "Cost": 50000
+      "Cost": 0
     },
     {
       "Category": "Mech",
@@ -31,7 +31,7 @@
       "Hull Points (HP)": 7,
       "Heat Limit (HL)": 9,
       "Platforms (PF)": 5,
-      "Cost": 50000
+      "Cost": 0
     },
     {
       "Category": "Ground Forces",
@@ -42,7 +42,7 @@
       "Hull Points (HP)": 4,
       "Heat Limit (HL)": 7,
       "Platforms (PF)": 3,
-      "Cost": 30000
+      "Cost": 0
     },
     {
       "Category": "Ground Forces",
@@ -53,7 +53,7 @@
       "Hull Points (HP)": 2,
       "Heat Limit (HL)": 8,
       "Platforms (PF)": 2,
-      "Cost": 25000
+      "Cost": 0
     },
     {
       "Category": "Ground Forces",
@@ -64,7 +64,7 @@
       "Hull Points (HP)": 2,
       "Heat Limit (HL)": 5,
       "Platforms (PF)": 2,
-      "Cost": 10000
+      "Cost": 0
     }
   ]
 }
