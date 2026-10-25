@@ -6,35 +6,28 @@ const unit_numbers = document.getElementById('unit-numbers');
 let units = [];
 let items = [];
 let ammo = [];
-let scars = [];
 
 // per-panel runtime state and refs
 var panels = Array.from({length: PANEL_COUNT}, () => ({
   state: {
-    selectedIndex: 0,
-    maxHP: 0, currentHP: 0,
-    heatLimit: 0, currentHeat: 0,
-    savedHPBeforeHeatOverride: null
+    selectedIndex: 0
   },
-  refs: {platformList: null, statsGrid: null, statsMap: {}, totalEl: null, gameplayHp: null, gameplayHeat: null, hpPlus: null, hpMinus: null, heatPlus: null, heatMinus: null, destroyed: null}
+  refs: {platformList: null, statsGrid: null, statsMap: {}, totalEl: null}
 }));
 
 async function loadData(){
-  const [uRes, pRes, aRes, sRes] = await Promise.all([
+  const [uRes, pRes, aRes] = await Promise.all([
     fetch('data/Units.json'),
     fetch('data/Platform.json'),
-    fetch('data/Ammo.json'),
-    fetch('data/Scars.json')
+    fetch('data/Ammo.json')
   ]);
   const ujson = await uRes.json();
   const pjson = await pRes.json();
   const ajson = await aRes.json();
-  const sjson = await sRes.json();
 
   units = ujson.Units || [];
   items = (pjson.Platform && pjson.Platform.Items) || pjson.Items || [];
   ammo = ajson.Ammo || [];
-  scars = sjson.Scars || [];
 
   initPanels();
 }
@@ -111,30 +104,6 @@ function createPanel(i){
   const totalRow = document.createElement('div'); totalRow.className='row'; totalRow.innerHTML = `<strong>Total Cost:</strong> <span id="total-${i}">0</span>¢`;
   statsCard.appendChild(totalRow);
 
-  // gameplay card
-  const gpCard = document.createElement('section'); gpCard.className='card';
-  const gpH = document.createElement('h3'); gpH.textContent='Gameplay';
-  gpCard.appendChild(gpH);
-  const hpRow = document.createElement('div'); hpRow.className='gameplay-row';
-  const hpLabel = document.createElement('div'); hpLabel.innerHTML = `<strong>HP:</strong> <span id="gameplay-hp-${i}">-</span>`;
-  const hpButtons = document.createElement('div'); hpButtons.className='buttons row';
-  const hpMinus = document.createElement('button'); hpMinus.id=`hp-minus-${i}`; hpMinus.textContent='-';
-  const hpPlus = document.createElement('button'); hpPlus.id=`hp-plus-${i}`; hpPlus.textContent='+';
-  hpButtons.appendChild(hpMinus); hpButtons.appendChild(hpPlus);
-  hpRow.appendChild(hpLabel); hpRow.appendChild(hpButtons);
-
-  const heatRow = document.createElement('div'); heatRow.className='gameplay-row';
-  const heatLabel = document.createElement('div'); heatLabel.innerHTML = `<strong>Heat:</strong> <span id="gameplay-heat-${i}">-</span>`;
-  const heatButtons = document.createElement('div'); heatButtons.className='buttons row';
-  const heatMinus = document.createElement('button'); heatMinus.id=`heat-minus-${i}`; heatMinus.textContent='-';
-  const heatPlus = document.createElement('button'); heatPlus.id=`heat-plus-${i}`; heatPlus.textContent='+';
-  heatButtons.appendChild(heatMinus); heatButtons.appendChild(heatPlus);
-  heatRow.appendChild(heatLabel); heatRow.appendChild(heatButtons);
-
-  const destroyed = document.createElement('div'); destroyed.id = `destroyed-${i}`; destroyed.className='destroyed'; destroyed.style.display='none'; destroyed.textContent='DESTROYED';
-
-  gpCard.appendChild(hpRow); gpCard.appendChild(heatRow); gpCard.appendChild(destroyed);
-
   // platforms card
   const platCard = document.createElement('section'); platCard.className='card';
   const plH = document.createElement('h3'); plH.textContent='Platforms'; 
@@ -150,30 +119,9 @@ function createPanel(i){
   platCard.appendChild(plH); platCard.appendChild(plList);
   platCard.insertBefore(plHeader, plList);
 
-  // Scar Card
-  const scarCard = document.createElement('section'); scarCard.className='card';
-  const scarH = document.createElement('h3'); scarH.textContent='SCARs';
-  const scarList = document.createElement('div'); scarList.id = `scar-list-${i}`; scarList.className='scar-list';
-  scarCard.appendChild(scarH); scarCard.appendChild(scarList);
-
-  // populate scar list
-  scars.forEach(scar=>{
-    const scarRow = document.createElement('div'); scarRow.className='scar-row';
-    const scarLabel = document.createElement('div'); scarLabel.textContent=scar.Name; scarLabel.className='scar-label';
-    const scarDesc = document.createElement('div'); scarDesc.textContent=scar.Description; scarDesc.className='scar-description';
-    const scarSelect = document.createElement('select'); scarSelect.id = `scar-select-${i}-${scar.Name}`; scarSelect.className='scar-select';
-    scarSelect.innerHTML = '<option value="Zero">-</option><option value="One">One</option><option value="Two">Two</option><option value="Three">Three</option>';
-    scarRow.appendChild(scarLabel); scarRow.appendChild(scarSelect); scarRow.appendChild(scarDesc);
-    scarList.appendChild(scarRow);
-  });
-
-  
-
   wrapper.appendChild(header);
   wrapper.appendChild(statsCard);
-  wrapper.appendChild(gpCard);
   wrapper.appendChild(platCard);
-  wrapper.appendChild(scarCard);
 
   // store refs
   panels[i].refs = {
@@ -181,10 +129,7 @@ function createPanel(i){
     statsGrid,
     statsMap: {},
     platformList: plList,
-    totalEl: totalRow.querySelector('span'),
-    gameplayHp: hpLabel.querySelector('span'),
-    gameplayHeat: heatLabel.querySelector('span'),
-    hpPlus, hpMinus, heatPlus, heatMinus, destroyed
+    totalEl: totalRow.querySelector('span')
   };
   // runtime tracking for generated slots created by grant-type platforms
   panels[i].state.extraSlots = 0;
@@ -192,10 +137,6 @@ function createPanel(i){
 
   // events
   sel.addEventListener('change', ()=> onPanelUnitChange(i));
-  hpPlus.addEventListener('click', ()=> onHpPlus(i));
-  hpMinus.addEventListener('click', ()=> onHpMinus(i));
-  heatPlus.addEventListener('click', ()=> onHeatPlus(i));
-  heatMinus.addEventListener('click', ()=> onHeatMinus(i));
 
   return wrapper;
 }
@@ -269,12 +210,6 @@ function applyModsAndRenderStats(panelIndex){
     valEl.textContent = (modified[k]===undefined?'':modified[k]);
     if(modifiedKeys.has(k)) valEl.classList.add('modified'); else valEl.classList.remove('modified');
   });
-
-  // apply to runtime state
-  p.state.maxHP = Number(modified['Hull Points (HP)']) || 0;
-  p.state.heatLimit = Number(modified['Heat Limit (HL)']) || 0;
-  if(p.state.currentHP > p.state.maxHP) p.state.currentHP = p.state.maxHP;
-  updatePanelGameplayDisplay(panelIndex);
 }
 
 function populateUnitSelect(i){
@@ -313,15 +248,6 @@ function renderPanel(i){
     // store reference for later updates when Mods are applied
     p.refs.statsMap[k] = val;
   });
-
-  // init gameplay state
-  p.state.maxHP = Number(u['Hull Points (HP)']) || 0;
-  p.state.heatLimit = Number(u['Heat Limit (HL)']) || 0;
-  p.state.currentHP = p.state.maxHP;
-  p.state.currentHeat = 0;
-  p.state.savedHPBeforeHeatOverride = null;
-
-  updatePanelGameplayDisplay(i);
 
   const slots = Number(u['Platforms (PF)']) || 0;
   for(let s=0;s<slots;s++) addPlatformRow(i, s);
@@ -448,23 +374,6 @@ function updatePanelTotal(i){
   p.refs.totalEl.textContent = total;
 }
 
-function updatePanelGameplayDisplay(i){
-  const p = panels[i];
-  if(p.state.currentHeat > p.state.heatLimit){
-    p.refs.gameplayHp.textContent = 0; p.refs.gameplayHeat.textContent = p.state.currentHeat; p.refs.destroyed.style.display='block';
-  } else {
-    p.refs.gameplayHp.textContent = p.state.currentHP; p.refs.gameplayHeat.textContent = p.state.currentHeat;
-    if(p.state.currentHP <= 0) p.refs.destroyed.style.display='block'; else p.refs.destroyed.style.display='none';
-  }
-    // update stat trackers (displayed in gameplay card now)
-}
-
-// gameplay handlers
-function onHpPlus(i){ const p=panels[i]; if(!units[p.state.selectedIndex]) return; p.state.currentHP = Math.min(p.state.maxHP, p.state.currentHP+1); if(p.state.currentHeat>p.state.heatLimit) p.state.savedHPBeforeHeatOverride = p.state.currentHP; updatePanelGameplayDisplay(i); updatePanelTotal(i); }
-function onHpMinus(i){ const p=panels[i]; if(!units[p.state.selectedIndex]) return; p.state.currentHP = Math.max(0, p.state.currentHP-1); if(p.state.currentHP===0) p.refs.destroyed.style.display='block'; updatePanelGameplayDisplay(i); }
-function onHeatPlus(i){ const p=panels[i]; if(!units[p.state.selectedIndex]) return; p.state.currentHeat = Math.max(0, p.state.currentHeat+1); if(p.state.currentHeat>p.state.heatLimit && p.state.savedHPBeforeHeatOverride===null) p.state.savedHPBeforeHeatOverride = p.state.currentHP; updatePanelGameplayDisplay(i); }
-function onHeatMinus(i){ const p=panels[i]; if(!units[p.state.selectedIndex]) return; p.state.currentHeat = Math.max(0, p.state.currentHeat-1); if(p.state.currentHeat<=p.state.heatLimit && p.state.savedHPBeforeHeatOverride!==null){ p.state.currentHP = p.state.savedHPBeforeHeatOverride; p.state.savedHPBeforeHeatOverride = null; } updatePanelGameplayDisplay(i); }
-
 loadData().catch(err=>{ console.error(err); alert('Failed to load JSON files. Run a static server from the Tool folder and open ui/index.html (see README).') });
 
 function updatePanelArray(newCount) {
@@ -472,10 +381,7 @@ function updatePanelArray(newCount) {
     // add new panel states for the additional panels
     const additionalPanels = Array.from({ length: newCount - PANEL_COUNT }, () => ({
       state: {
-      selectedIndex: 0,
-      maxHP: 0, currentHP: 0,
-      heatLimit: 0, currentHeat: 0,
-      savedHPBeforeHeatOverride: null
+      selectedIndex: 0
     },
     refs: {}
   }));
